@@ -211,7 +211,7 @@ async function fetchEvents(){
     summary: t.title,
     date: t.date,
     time: t.time || '',
-    done: false,      // 完了タスクは API が返さない = 自動的に消える
+    done: !!t.done,
     rid: null
   })).filter(e => e.date);
 }
@@ -262,7 +262,8 @@ function render(items){
   // 今日:未完了だけ表示、完了は進捗に数える
   const open = today.filter(e => !e.done);
   const doneN = today.length - open.length;
-  $('prog').innerHTML = open.length ? '<b>'+open.length+'</b> 件' : '';
+  $('prog').innerHTML = today.length
+    ? '<b>'+doneN+'</b> / '+today.length : '';
 
   const tEl = $('today');
   const shownOpen = open.slice(0, CONFIG.maxToday);
