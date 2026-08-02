@@ -154,7 +154,8 @@ const CONFIG = {
   weather: { lat: 35.6718, lon: 139.8540 }  // 江戸川区西葛西。改坐标即可换地点
 };
 const DONE_MARK  = /^\s*[✓✔☑]\s*/;  // 旧方式(互換のため残す)
-const DONE_COLOR = '8';              // Google 日历「石墨色」= 已完成
+const DONE_COLOR = '8';              // 予備(公開読み取りでは返らない)
+const DONE_DESC  = /\bDONE\b/;        // 本命:説明欄に DONE = 完了
 /* ═══════════════════════════════════════ */
 
 const WD = ['日','月','火','水','木','金','土'];
@@ -221,10 +222,9 @@ async function fetchEvents(){
       summary: raw.replace(DONE_MARK,''),
       done: DONE_MARK.test(raw)
             || ev.colorId === DONE_COLOR
-            || /\bDONE\b/.test(ev.description || ''),
+            || DONE_DESC.test(ev.description || ''),
       rid: ev.recurringEventId || null,
       time: ev.start.dateTime ? ev.start.dateTime.slice(11,16) : '',
-      colorId: ev.colorId || '',
       date: (ev.start.date || ev.start.dateTime || '').slice(0,10)
     };
   }).filter(e => e.date);
@@ -326,15 +326,11 @@ function render(items){
 
 async function sync(){
   try{
-    const evs = await fetchEvents(); window.__last = evs; render(evs);
+    render(await fetchEvents());
     lastOK = Date.now();
     $('foot').classList.remove('stale');
     $('upd').textContent = 'UPDATED '+hhmm(new Date());
-    const t0 = ymd(new Date());
-    const dbg = (window.__last||[]).filter(e=>e.date===t0)
-      .map(e=>(e.done?'D':'-')+(e.colorId||'·')).join(' ');
-    $('status').textContent = 'NEXT SYNC '+CONFIG.refreshMinutes+' MIN'
-      + (dbg ? '   ['+dbg+']' : '');
+    $('status').textContent = 'NEXT SYNC '+CONFIG.refreshMinutes+' MIN';
   }catch(err){
     $('foot').classList.add('stale');
     $('status').textContent = 'SYNC ERROR — '+err.message;
