@@ -67,13 +67,13 @@
     color:var(--dim);letter-spacing:.08em;margin-top:1cqw}
 
   /* ── timeline ── */
-  .rows{flex:1;display:flex;flex-direction:column;justify-content:space-evenly}
+  .rows{flex:1;display:flex;flex-direction:column;justify-content:flex-start}
   .grp{font-family:var(--cond);font-weight:600;font-size:3.6cqw;
     color:var(--dim);letter-spacing:.26em;padding:1.6cqw 0 .6cqw}
   .row.brk{border-top:.7cqw solid var(--rule);margin-top:2cqw;padding-top:3.4cqw}
   .row .d.rel{font-family:var(--body);font-weight:700;font-size:6.2cqw}
   .row{display:grid;grid-template-columns:19.4cqw 7cqw auto 1fr;
-    align-items:baseline;gap:1.5cqw;padding:2.2cqw 0;
+    align-items:baseline;gap:1.5cqw;padding:3cqw 0;
     border-bottom:.19cqw solid var(--rule)}
   .row .hm:empty{display:none}
   .row .hm:empty + .t{margin-left:-1.5cqw}
@@ -151,7 +151,7 @@ const CONFIG = {
   nightStart: 22,         // 夜间变暗 開始(時)
   nightEnd:   6,          // 夜间变暗 終了(時)
 
-  weather: { lat: 35.29, lon: 136.91 }  // 小牧市。改坐标即可换地点
+  weather: { lat: 35.6718, lon: 139.8540 }  // 江戸川区西葛西。改坐标即可换地点
 };
 const DONE_MARK  = /^\s*[✓✔☑]\s*/;  // 旧方式(互換のため残す)
 const DONE_COLOR = '8';              // Google 日历「石墨色」= 已完成
