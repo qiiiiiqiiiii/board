@@ -138,8 +138,7 @@
 <script>
 /* ══════════ 設定 / 只需要改这里 ══════════ */
 const CONFIG = {
-  calendarId: "ee7a8290615bfa8b8c93d8edde003d1078b47ddcdaf1a1205344ceffadf395ab@group.calendar.google.com",
-  apiKey:     "AIzaSyBM_eaO8PPBmP7xXqhxD0BkOTUg2F1vxJ0",
+  apiUrl: "https://board-api.yidilaning.workers.dev/",
 
   refreshMinutes: 10,     // 拉取间隔
   maxToday: 4,            // 今日最多显示几条
@@ -204,30 +203,17 @@ function tick(){
 
 /* ── データ取得 ── */
 async function fetchEvents(){
-  const min = new Date(); min.setDate(min.getDate()-CONFIG.overdueLookbackDays);
-  const max = new Date(); max.setDate(max.getDate()+90);
-  const url = 'https://www.googleapis.com/calendar/v3/calendars/'
-    + encodeURIComponent(CONFIG.calendarId) + '/events'
-    + '?key='     + encodeURIComponent(CONFIG.apiKey)
-    + '&timeMin=' + min.toISOString()
-    + '&timeMax=' + max.toISOString()
-    + '&singleEvents=true&orderBy=startTime&maxResults=100';
-
-  const res = await fetch(url);
+  const res = await fetch(CONFIG.apiUrl, { cache: 'no-store' });
   if(!res.ok) throw new Error('HTTP '+res.status);
   const data = await res.json();
-  return (data.items||[]).map(ev => {
-    const raw = ev.summary || '(無題)';
-    return {
-      summary: raw.replace(DONE_MARK,''),
-      done: DONE_MARK.test(raw)
-            || ev.colorId === DONE_COLOR
-            || DONE_DESC.test(ev.description || ''),
-      rid: ev.recurringEventId || null,
-      time: ev.start.dateTime ? ev.start.dateTime.slice(11,16) : '',
-      date: (ev.start.date || ev.start.dateTime || '').slice(0,10)
-    };
-  }).filter(e => e.date);
+  if(!data.ok) throw new Error(data.err || 'API ERROR');
+  return (data.items||[]).map(t => ({
+    summary: t.title,
+    date: t.date,
+    time: t.time || '',
+    done: false,      // 完了タスクは API が返さない = 自動的に消える
+    rid: null
+  })).filter(e => e.date);
 }
 
 async function fetchWeather(){
@@ -276,8 +262,7 @@ function render(items){
   // 今日:未完了だけ表示、完了は進捗に数える
   const open = today.filter(e => !e.done);
   const doneN = today.length - open.length;
-  $('prog').innerHTML = today.length
-    ? '<b>'+doneN+'</b> / '+today.length : '';
+  $('prog').innerHTML = open.length ? '<b>'+open.length+'</b> 件' : '';
 
   const tEl = $('today');
   const shownOpen = open.slice(0, CONFIG.maxToday);
