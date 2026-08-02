@@ -67,7 +67,7 @@
     color:var(--dim);letter-spacing:.08em;margin-top:1cqw}
 
   /* ── timeline ── */
-  .rows{flex:1;display:flex;flex-direction:column}
+  .rows{flex:1;display:flex;flex-direction:column;justify-content:space-evenly}
   .grp{font-family:var(--cond);font-weight:600;font-size:3.6cqw;
     color:var(--dim);letter-spacing:.26em;padding:1.6cqw 0 .6cqw}
   .row.brk{border-top:.7cqw solid var(--rule);margin-top:2cqw;padding-top:3.4cqw}
@@ -85,8 +85,9 @@
     line-height:1;font-variant-numeric:tabular-nums}
   .row .w{font-family:var(--cond);font-weight:600;font-size:4.1cqw;
     color:var(--dim);line-height:1}
-  .row .t{font-size:8.5cqw;font-weight:700;line-height:1.1;
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .row .t{font-size:8.5cqw;font-weight:700;line-height:1.16;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+    overflow:hidden;word-break:break-word}
   .row.soon .d,.row.soon .t{color:var(--amber)}
   .row.far .d,.row.far .t{color:var(--dim)}
   .row.far .t{font-weight:500}
@@ -152,7 +153,8 @@ const CONFIG = {
 
   weather: { lat: 35.29, lon: 136.91 }  // 小牧市。改坐标即可换地点
 };
-const DONE_MARK = /^\s*[✓✔☑]\s*/;   // 标题加这个前缀 = 已完成
+const DONE_MARK  = /^\s*[✓✔☑]\s*/;  // 旧方式(互換のため残す)
+const DONE_COLOR = '8';              // Google 日历「石墨色」= 已完成
 /* ═══════════════════════════════════════ */
 
 const WD = ['日','月','火','水','木','金','土'];
@@ -217,9 +219,10 @@ async function fetchEvents(){
     const raw = ev.summary || '(無題)';
     return {
       summary: raw.replace(DONE_MARK,''),
-      done: DONE_MARK.test(raw),
+      done: DONE_MARK.test(raw) || ev.colorId === DONE_COLOR,
       rid: ev.recurringEventId || null,
       time: ev.start.dateTime ? ev.start.dateTime.slice(11,16) : '',
+      colorId: ev.colorId || '',
       date: (ev.start.date || ev.start.dateTime || '').slice(0,10)
     };
   }).filter(e => e.date);
