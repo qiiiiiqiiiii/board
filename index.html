@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>壁面ボード</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Noto+Sans+JP:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0A0D12; --rule:#1C222C; --amber:#FFB01F;
+    --paper:#EDEAE3; --dim:#5E6976; --alert:#FF4A35;
+    --cond:"Barlow Condensed","Helvetica Neue",Arial,sans-serif;
+    --body:"Noto Sans JP","Hiragino Sans","Yu Gothic",sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#000;min-height:100vh;min-height:100dvh;
+    display:flex;align-items:center;justify-content:center;padding:8px}
+  .board{
+    width:100%;
+    max-width:min(100%, 56vh);
+    max-width:min(100%, 56dvh);
+    aspect-ratio:1080/1920;
+    container-type:size;
+    background:var(--ink);color:var(--paper);
+    font-family:var(--body);font-feature-settings:"tnum";
+    display:flex;flex-direction:column;
+    padding:5.2cqw 4.1cqw 3.7cqw;
+  }
+  .head{display:flex;align-items:baseline;justify-content:space-between;
+    font-family:var(--cond);font-weight:600;letter-spacing:.02em}
+  .head .day{font-size:5.9cqw}
+  .head .day em{font-style:normal;color:var(--dim);margin-left:1.3cqw;font-size:4.8cqw}
+  .head .clk{font-size:5.9cqw;color:var(--amber);font-variant-numeric:tabular-nums}
+
+  .hr{height:.19cqw;background:var(--rule);margin:2.6cqw 0;flex-shrink:0}
+
+  .late{display:flex;align-items:center;gap:2.2cqw;
+    border-left:1.1cqw solid var(--alert);
+    padding:1.3cqw 0 1.3cqw 2.4cqw;margin-bottom:3.1cqw}
+  .late .tag{font-family:var(--cond);font-weight:700;font-size:4.1cqw;
+    color:var(--alert);letter-spacing:.06em;line-height:1;flex-shrink:0}
+  .late .txt{font-size:8.1cqw;font-weight:700;color:var(--alert);line-height:1.1}
+
+  .eyebrow{font-family:var(--cond);font-weight:700;font-size:4.8cqw;
+    letter-spacing:.22em;color:var(--amber);margin-bottom:2cqw}
+  .today li{list-style:none;font-size:12.2cqw;font-weight:900;
+    line-height:1.34;letter-spacing:.01em}
+  .today.dense li{font-size:9.6cqw;line-height:1.3}
+  .today .none{font-size:7cqw;font-weight:500;color:var(--dim)}
+
+  .rows{flex:1;display:flex;flex-direction:column}
+  .row{display:grid;grid-template-columns:19.4cqw 7cqw 1fr;
+    align-items:baseline;gap:1.7cqw;padding:2.4cqw 0;
+    border-bottom:.19cqw solid var(--rule)}
+  .row .d{font-family:var(--cond);font-weight:700;font-size:7.8cqw;
+    line-height:1;font-variant-numeric:tabular-nums}
+  .row .w{font-family:var(--cond);font-weight:600;font-size:4.1cqw;
+    color:var(--dim);line-height:1}
+  .row .t{font-size:8.5cqw;font-weight:700;line-height:1.1}
+  .row.soon .d,.row.soon .t{color:var(--amber)}
+  .row.far .d,.row.far .t{color:var(--dim)}
+  .row.far .t{font-weight:500}
+
+  .foot{display:flex;justify-content:space-between;align-items:center;
+    font-family:var(--cond);font-weight:500;font-size:3.5cqw;
+    color:var(--dim);letter-spacing:.08em;padding-top:2.4cqw}
+  .foot .err{color:var(--alert)}
+  .dot{width:1.5cqw;height:1.5cqw;border-radius:50%;background:var(--amber);
+    display:inline-block;margin-right:1.3cqw;vertical-align:middle}
+  @media (prefers-reduced-motion:no-preference){
+    .dot{animation:p 4s ease-in-out infinite}
+    @keyframes p{0%,100%{opacity:1}50%{opacity:.25}}
+  }
+</style>
+</head>
+<body>
+<div class="board">
+  <div class="head">
+    <div class="day" id="day">—</div>
+    <div class="clk" id="clk">--:--</div>
+  </div>
+  <div class="hr"></div>
+
+  <div id="lateBox"></div>
+
+  <div class="eyebrow">TODAY</div>
+  <ul class="today" id="today"><li class="none">読み込み中…</li></ul>
+
+  <div class="hr"></div>
+  <div class="rows" id="rows"></div>
+
+  <div class="foot">
+    <span><span class="dot"></span><span id="upd">—</span></span>
+    <span id="status">NEXT SYNC 10 MIN</span>
+  </div>
+</div>
+
+<script>
+/* ══════════ ここだけ書き換える / 只需要改这里 ══════════ */
+const CONFIG = {
+  calendarId: "ee7a8290615bfa8b8c93d8edde003d1078b47ddcdaf1a1205344ceffadf395ab@group.calendar.google.com",
+  apiKey:     "AIzaSyBM_eaO8PPBmP7xXqhxD0BkOTUg2F1vxJ0",
+  refreshMinutes: 10,      // 多久拉取一次
+  maxToday: 2,             // 今日最多显示几条(字最大,别超过 3)
+  maxUpcoming: 4,          // 下方时间轴最多几行
+  overdueLookbackDays: 14  // 往回看几天算「遅延」
+};
+/* ═══════════════════════════════════════════════════ */
+
+const WD = ['日','月','火','水','木','金','土'];
+const DEMO = [
+  { summary:'7月分 締め',   date:iso(-3) },
+  { summary:'代购账目结算', date:iso(0)  },
+  { summary:'笔记选图',     date:iso(0)  },
+  { summary:'FC先行締切',   date:iso(3)  },
+  { summary:'8月分締め',    date:iso(7)  },
+  { summary:'游记投稿',     date:iso(12) },
+  { summary:'一般発売',     date:iso(30) }
+];
+
+function iso(offset){
+  const d = new Date(); d.setDate(d.getDate()+offset);
+  return ymd(d);
+}
+function ymd(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')
+       +'-'+String(d.getDate()).padStart(2,'0');
+}
+function parse(s){
+  const [y,m,d] = s.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+function diffDays(s){
+  const t = new Date(); t.setHours(0,0,0,0);
+  return Math.round((parse(s) - t) / 86400000);
+}
+
+function clock(){
+  const n = new Date();
+  document.getElementById('clk').textContent =
+    String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+  document.getElementById('day').innerHTML =
+    (n.getMonth()+1)+'月'+n.getDate()+'日<em>'+WD[n.getDay()]+'</em>';
+}
+
+async function fetchEvents(){
+  if(!CONFIG.calendarId || !CONFIG.apiKey) return { items: DEMO, demo: true };
+
+  const min = new Date(); min.setDate(min.getDate()-CONFIG.overdueLookbackDays);
+  const max = new Date(); max.setDate(max.getDate()+90);
+  const url = 'https://www.googleapis.com/calendar/v3/calendars/'
+    + encodeURIComponent(CONFIG.calendarId) + '/events'
+    + '?key='          + encodeURIComponent(CONFIG.apiKey)
+    + '&timeMin='      + min.toISOString()
+    + '&timeMax='      + max.toISOString()
+    + '&singleEvents=true&orderBy=startTime&maxResults=60';
+
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('HTTP '+res.status);
+  const data = await res.json();
+  const items = (data.items||[]).map(ev => ({
+    summary: ev.summary || '(無題)',
+    date: (ev.start.date || ev.start.dateTime || '').slice(0,10)
+  })).filter(e => e.date);
+  return { items, demo: false };
+}
+
+function render(items){
+  const late = [], today = [], up = [];
+  items.forEach(e => {
+    const d = diffDays(e.date);
+    if(d < 0)       late.push(e);
+    else if(d === 0) today.push(e);
+    else             up.push({...e, d});
+  });
+
+  // 遅延
+  const lb = document.getElementById('lateBox');
+  if(late.length){
+    const extra = late.length > 1 ? ' +'+(late.length-1) : '';
+    lb.innerHTML = '<div class="late"><div class="tag">遅延</div>'
+      + '<div class="txt">'+esc(late[late.length-1].summary)+extra+'</div></div>';
+  } else lb.innerHTML = '';
+
+  // 今日
+  const tEl = document.getElementById('today');
+  tEl.className = 'today' + (today.length > CONFIG.maxToday ? ' dense' : '');
+  tEl.innerHTML = today.length
+    ? today.slice(0, CONFIG.maxToday+1).map(e=>'<li>'+esc(e.summary)+'</li>').join('')
+    : '<li class="none">予定なし</li>';
+
+  // 時間軸
+  document.getElementById('rows').innerHTML = up
+    .slice(0, CONFIG.maxUpcoming)
+    .map(e => {
+      const dt = parse(e.date);
+      const cls = e.d <= 7 ? 'soon' : (e.d <= 30 ? '' : 'far');
+      return '<div class="row '+cls+'">'
+        + '<div class="d">'+String(dt.getMonth()+1).padStart(2,'0')+'/'
+                           +String(dt.getDate()).padStart(2,'0')+'</div>'
+        + '<div class="w">'+WD[dt.getDay()]+'</div>'
+        + '<div class="t">'+esc(e.summary)+'</div></div>';
+    }).join('');
+}
+
+function esc(s){
+  return String(s).replace(/[&<>"]/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+async function sync(){
+  const st = document.getElementById('status');
+  try{
+    const { items, demo } = await fetchEvents();
+    render(items);
+    const n = new Date();
+    document.getElementById('upd').textContent = 'UPDATED '
+      + String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+    st.className = '';
+    st.textContent = demo ? 'DEMO — 未設定' : 'NEXT SYNC '+CONFIG.refreshMinutes+' MIN';
+  }catch(err){
+    st.className = 'err';
+    st.textContent = 'SYNC ERROR — '+err.message;
+  }
+}
+
+clock(); setInterval(clock, 20000);
+sync();  setInterval(sync, CONFIG.refreshMinutes*60000);
+</script>
+</body>
+</html>
