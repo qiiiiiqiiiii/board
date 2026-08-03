@@ -96,6 +96,13 @@
     text-decoration-thickness:.4cqw;font-weight:500}
 
   /* ── footer ── */
+  .someday{margin-top:2.4cqw}
+  .someday .lab{font-family:var(--cond);font-weight:700;font-size:3.6cqw;
+    letter-spacing:.24em;color:var(--dim);margin-bottom:1.2cqw}
+  .someday li{list-style:none;font-size:6cqw;font-weight:500;
+    color:var(--dim);line-height:1.42;
+    display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+
   .foot{display:flex;justify-content:space-between;align-items:center;
     font-family:var(--cond);font-weight:500;font-size:3.5cqw;
     color:var(--dim);letter-spacing:.08em;padding-top:2.4cqw}
@@ -126,6 +133,7 @@
   </div>
   <ul class="today" id="today"><li class="none">読み込み中…</li></ul>
   <div class="more" id="more"></div>
+  <div id="sdBox"></div>
 
   <div class="hr"></div>
   <div class="rows" id="rows"></div>
@@ -144,6 +152,7 @@ const CONFIG = {
   refreshMinutes: 10,     // 拉取间隔
   maxToday: 4,            // 今日最多显示几条
   maxUpcoming: 5,         // 时间轴最多几行
+  maxSomeday: 3,          // 底部「SOMEDAY」最多几条
   overdueLookbackDays: 7, // 过期超过这个天数就不再报警(视为已作废)
 
   staleAfterMinutes: 30,  // 超过多久没同步成功就报警
@@ -213,8 +222,9 @@ async function fetchEvents(){
     date: t.date,
     time: t.time || '',
     done: !!t.done,
+    someday: !!t.someday,
     rid: null
-  })).filter(e => e.date);
+  })).filter(e => e.date || e.someday);
 }
 
 async function fetchWeather(){
@@ -244,8 +254,9 @@ function render(items){
     seen.add(e.rid); return true;
   });
 
-  const late=[], today=[], up=[];
+  const late=[], today=[], up=[], sd=[];
   items.forEach(e => {
+    if(e.someday){ sd.push(e); return; }
     const d = diffDays(e.date);
     if(d < 0){ if(!e.done && d >= -CONFIG.overdueLookbackDays) late.push(e); }
     else if(d === 0) today.push(e);
@@ -310,6 +321,16 @@ function render(items){
   const restN = up.length - shown.length;
   if(restN) html += '<div class="grp">+ '+restN+' 件</div>';
   $('rows').innerHTML = html;
+
+  // ── いつか(締切なし)──
+  const sdShown = sd.slice(0, CONFIG.maxSomeday);
+  const sdMore = sd.length - sdShown.length;
+  $('sdBox').innerHTML = sdShown.length
+    ? '<div class="someday"><div class="lab">SOMEDAY'
+      + (sdMore ? '　+' + sdMore : '') + '</div><ul>'
+      + sdShown.map(e => '<li>'+esc(e.summary)+'</li>').join('')
+      + '</ul></div>'
+    : '';
 }
 
 async function sync(){
