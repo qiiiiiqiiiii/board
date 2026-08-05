@@ -59,7 +59,10 @@
   .eyebrow .prog b{color:var(--amber);font-weight:700}
   .today li{list-style:none;font-size:12.2cqw;font-weight:900;
     line-height:1.34;letter-spacing:.01em}
-  .today.dense li{font-size:9.6cqw;line-height:1.28}
+  .today li .hm{font-family:var(--cond);font-weight:700;color:var(--amber);
+    font-size:.62em;margin-right:.28em;font-variant-numeric:tabular-nums;
+    letter-spacing:.02em}
+  .today.dense li{font-size:8.8cqw;line-height:1.26}
   .today li.fin{font-size:8.4cqw;font-weight:500;color:var(--dim);
     text-decoration:line-through;text-decoration-color:var(--dim);
     text-decoration-thickness:.4cqw;line-height:1.45}
@@ -150,7 +153,7 @@ const CONFIG = {
   apiUrl: "https://board-api.yidilaning.workers.dev/",
 
   refreshMinutes: 10,     // 拉取间隔
-  maxToday: 4,            // 今日最多显示几条
+  maxToday: 5,            // 今日最多显示几条
   maxUpcoming: 5,         // 时间轴最多几行
   maxSomeday: 3,          // 底部「SOMEDAY」最多几条
   overdueLookbackDays: 7, // 过期超过这个天数就不再报警(视为已作废)
@@ -272,7 +275,8 @@ function render(items){
     : '';
 
   // 今日:未完了だけ表示、完了は進捗に数える
-  const open = today.filter(e => !e.done);
+  const open = today.filter(e => !e.done)
+    .sort((a,b) => (a.time?'0'+a.time:'1').localeCompare(b.time?'0'+b.time:'1'));
   const doneN = today.length - open.length;
   $('prog').innerHTML = today.length
     ? '<b>'+doneN+'</b> / '+today.length : '';
@@ -281,7 +285,9 @@ function render(items){
   const shownOpen = open.slice(0, CONFIG.maxToday);
   tEl.className = 'today' + (shownOpen.length >= 4 ? ' dense' : '');
 
-  let tHtml = shownOpen.map(e=>'<li>'+esc(e.summary)+'</li>').join('');
+  let tHtml = shownOpen.map(e =>
+    '<li>' + (e.time ? '<span class="hm">'+e.time+'</span>' : '')
+           + esc(e.summary) + '</li>').join('');
   // 完了ぶんは下に打ち消し線で
   // 余裕があれば完了分を打ち消し線で残す(今日だけ)
   const slots = CONFIG.maxToday - shownOpen.length;
