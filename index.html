@@ -160,6 +160,8 @@ const CONFIG = {
 
   staleAfterMinutes: 30,  // 超过多久没同步成功就报警
 
+  dayStartHour: 4,        // 一天从凌晨几点开始翻页(按你的作息)
+
   nightStart: 22,         // 夜间变暗 開始(時)
   nightEnd:   6,          // 夜间变暗 終了(時)
 
@@ -181,10 +183,16 @@ function ymd(d){
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')
        +'-'+String(d.getDate()).padStart(2,'0');
 }
+// 深夜は「まだ前日」とみなす
+function logicalToday(){
+  const n = new Date();
+  if(n.getHours() < CONFIG.dayStartHour) n.setDate(n.getDate()-1);
+  n.setHours(0,0,0,0);
+  return n;
+}
 function parse(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
 function diffDays(s){
-  const t=new Date(); t.setHours(0,0,0,0);
-  return Math.round((parse(s)-t)/86400000);
+  return Math.round((parse(s)-logicalToday())/86400000);
 }
 function hhmm(d){
   return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
@@ -194,7 +202,8 @@ function hhmm(d){
 function tick(){
   const n = new Date();
   $('clk').textContent = hhmm(n);
-  $('day').innerHTML = (n.getMonth()+1)+'月'+n.getDate()+'日<em>'+WD[n.getDay()]+'</em>';
+  const L = logicalToday();
+  $('day').innerHTML = (L.getMonth()+1)+'月'+L.getDate()+'日<em>'+WD[L.getDay()]+'</em>';
 
   const h = n.getHours();
   const night = CONFIG.nightStart > CONFIG.nightEnd
